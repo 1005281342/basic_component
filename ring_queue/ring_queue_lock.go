@@ -41,11 +41,12 @@ func (r *RingQueueRWLock) Len() int {
 
 // 从队尾插入一个元素，如果队列满了则弹出队首元素
 func (r *RingQueueRWLock) Insert(x interface{}) interface{} {
-	r.rw.RLock()
-	defer r.rw.RUnlock()
 
 	var node = r.Head()
 	var full = r.IsFull()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
 	r.index++
 	if r.index == r.cap {
@@ -64,11 +65,13 @@ func (r *RingQueueRWLock) Insert(x interface{}) interface{} {
 // 从队首插入一个元素，如果队列满了则弹出队尾元素
 // 该方法适用于：如临时有一个任务需要优先执行
 func (r *RingQueueRWLock) LInsert(x interface{}) interface{} {
-	r.rw.RLock()
-	defer r.rw.RUnlock()
 
 	// 如果没有满，则直接在队首插入元素即可
 	if !r.IsFull() {
+
+		r.rw.Lock()
+		defer r.rw.Unlock()
+
 		if r.head == 0 {
 			r.head = r.cap
 		}
@@ -79,13 +82,13 @@ func (r *RingQueueRWLock) LInsert(x interface{}) interface{} {
 	}
 
 	var node = r.Tail()
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
 	if r.index == 0 {
 		r.head = 0
 		r.queue[0] = x
-
 		r.index = r.cap - 1
-
 		return node
 	}
 
@@ -121,10 +124,11 @@ func (r *RingQueueRWLock) LPop() interface{} {
 		return nil
 	}
 
-	r.rw.RLock()
-	defer r.rw.RUnlock()
-
 	var node = r.Head()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
 	if r.head == r.cap-1 {
 		r.head = 0
 	} else {
@@ -139,10 +143,9 @@ func (r *RingQueueRWLock) Pop() interface{} {
 		return nil
 	}
 
-	r.rw.RLock()
-	defer r.rw.RUnlock()
-
 	var node = r.Tail()
+	r.rw.Lock()
+	defer r.rw.Unlock()
 	if r.index == 0 {
 		r.index = r.cap - 1
 	} else {
