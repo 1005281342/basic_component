@@ -1,4 +1,4 @@
-package ring_queue
+package ring_queue_nonblocking
 
 type RingQueue struct {
 	cap   int
@@ -16,7 +16,7 @@ func NewRingQueue(cap int) *RingQueue {
 	return &RingQueue{
 		cap:   cap,
 		queue: make([]interface{}, cap, cap),
-		index: 0,
+		index: -1,
 		head:  0,
 	}
 }
@@ -37,9 +37,10 @@ func (r *RingQueue) Insert(x interface{}) interface{} {
 	var node = r.Head()
 	var full = r.IsFull()
 
-	r.index++
-	if r.index == r.cap {
+	if r.index == r.cap-1 {
 		r.index = 0
+	} else {
+		r.index++
 	}
 
 	r.queue[r.index] = x

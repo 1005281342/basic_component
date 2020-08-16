@@ -1,4 +1,4 @@
-package ring_queue
+package ring_queue_nonblocking
 
 import "sync"
 
