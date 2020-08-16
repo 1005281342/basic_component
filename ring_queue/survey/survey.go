@@ -6,6 +6,36 @@ import (
 )
 
 func main() {
+	case2()
+}
+
+func case2() {
+	var (
+		start = 100
+		end   = 2000
+		step  = 100
+		cnt   = 1
+	)
+	var rqb = ring_queue.NewRingQueueBlockRWLock(end)
+	survey.RunIterations("ringQueueBlock_Insert", start, end, step,
+		survey.Func2(func(x interface{}) { rqb.Insert(x) }, cnt))
+	survey.RunIterations("ringQueueBlock_LPop", start, end, step,
+		survey.Func2(func(x interface{}) { rqb.LPop() }, cnt))
+
+	var ch = NewChannel(end)
+	survey.RunIterations("channel_Insert", start, end, step,
+		survey.Func2(func(x interface{}) { ch.Insert(x) }, cnt))
+	survey.RunIterations("channel_LPop", start, end, step,
+		survey.Func2(func(x interface{}) { ch.LPop() }, cnt))
+	/*
+		ringQueueBlock_Insert, 708, 771, 623, 743, 652, 665, 501, 560, 555, 529, 543, 471, 477, 528, 487, 505, 486, 544, 483, 476,
+		ringQueueBlock_LPop, 533, 584, 594, 507, 583, 563, 515, 512, 486, 607, 696, 534, 487, 539, 468, 475, 484, 482, 510, 501,
+		channel_Insert, 864, 644, 897, 1020, 707, 907, 484, 561, 576, 621, 921, 591, 534, 498, 463, 552, 487, 468, 473, 544,
+		channel_LPop, 698, 624, 736, 722, 838, 763, 750, 696, 625, 745, 700, 675, 668, 909, 825, 699, 691, 802, 882, 760,
+	*/
+}
+
+func case1() {
 
 	var (
 		start = 100
