@@ -15,11 +15,11 @@ func TestRingQueueBlock_Len(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		r.Insert(i) // 3 + 7 -> 10
 	}
-	r.Pop() // 9
+	r.LPop() // 9
 	fmt.Println(r.Head(), r.Tail())
-	r.Pop()
-	r.Pop()
-	r.Pop()
+	r.LPop()
+	r.LPop()
+	r.LPop()
 	fmt.Println(r.Head(), r.Tail()) // 9-3 = 6
 
 	r.Insert(1023)

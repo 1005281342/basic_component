@@ -14,22 +14,22 @@ func main() {
 		cnt   = 10
 	)
 	// 并发写
-	var rqb = ring_queue.NewRingQueueBlockLock(end)
+	var rqb = ring_queue.NewRingQueueBlockRWLock(end)
 	survey.RunIterations("ringQueueBlock_Insert", start, end, step,
 		survey.Func2(func(x interface{}) { rqb.Insert(x) }, cnt))
 	survey.RunIterations("ringQueueBlock_LPop", start, end, step,
 		survey.Func2(func(x interface{}) { rqb.LPop() }, cnt))
 
-	var rq = ring_queue.NewRingQueueRWLock(end)
-	survey.RunIterations("ringQueue_Insert", start, end, step,
-		survey.Func2(func(x interface{}) { rq.Insert(x) }, cnt))
-	survey.RunIterations("ringQueue_LPop", start, end, step,
-		survey.Func2(func(x interface{}) { rq.LPop() }, cnt))
+	//var rq = ring_queue.NewRingQueueRWLock(end)
+	//survey.RunIterations("ringQueue_Insert", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.Insert(x) }, cnt))
+	//survey.RunIterations("ringQueue_LPop", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.LPop() }, cnt))
 
 	// 准备数据
 	var nums = survey.RandShuffle(end)
 	for i := 0; i < end; i++ {
-		rq.Insert(nums[i])
+		//rq.Insert(nums[i])
 		rqb.Insert(nums[i])
 	}
 
@@ -45,16 +45,16 @@ func main() {
 	survey.RunIterations("ringQueueBlock_Empty", start, end, step,
 		survey.Func2(func(x interface{}) { rqb.Empty() }, cnt))
 
-	survey.RunIterations("ringQueue_Head", start, end, step,
-		survey.Func2(func(x interface{}) { rq.Head() }, cnt))
-	survey.RunIterations("ringQueue_Tail", start, end, step,
-		survey.Func2(func(x interface{}) { rq.Tail() }, cnt))
-	survey.RunIterations("ringQueue_Len", start, end, step,
-		survey.Func2(func(x interface{}) { rq.Len() }, cnt))
-	survey.RunIterations("ringQueue_IsFull", start, end, step,
-		survey.Func2(func(x interface{}) { rq.IsFull() }, cnt))
-	survey.RunIterations("ringQueue_Empty", start, end, step,
-		survey.Func2(func(x interface{}) { rq.Empty() }, cnt))
+	//survey.RunIterations("ringQueue_Head", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.Head() }, cnt))
+	//survey.RunIterations("ringQueue_Tail", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.Tail() }, cnt))
+	//survey.RunIterations("ringQueue_Len", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.Len() }, cnt))
+	//survey.RunIterations("ringQueue_IsFull", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.IsFull() }, cnt))
+	//survey.RunIterations("ringQueue_Empty", start, end, step,
+	//	survey.Func2(func(x interface{}) { rq.Empty() }, cnt))
 }
 
 /*
