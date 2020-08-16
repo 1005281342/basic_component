@@ -72,7 +72,7 @@ func (q *RingQueueBlockLock) Insert(x interface{}) interface{} {
 	return true
 }
 
-func (q *RingQueueBlockLock) Pop() interface{} {
+func (q *RingQueueBlockLock) LPop() interface{} {
 	if q.Empty() {
 		return false
 	}
