@@ -56,7 +56,7 @@ func (q *RingQueueBlock) Insert(x interface{}) interface{} {
 	return true
 }
 
-func (q *RingQueueBlock) Pop() interface{} {
+func (q *RingQueueBlock) LPop() interface{} {
 	if q.Empty() {
 		return false
 	}

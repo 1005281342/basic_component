@@ -21,7 +21,7 @@ func (this *MyCircularQueue) DeQueue() bool {
 	if this.rq.Empty() {
 		return false
 	}
-	this.rq.Pop()
+	this.rq.LPop()
 	return true
 }
 

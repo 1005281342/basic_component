@@ -9,8 +9,8 @@ type RingQueueInterface interface {
 	Tail() interface{}
 	// 从队尾添加元素
 	Insert(x interface{}) interface{}
-	// 移除队尾元素
-	Pop() interface{}
+	// 移除队首元素
+	LPop() interface{}
 	// 队列已满
 	IsFull() bool
 	// 队列为空
@@ -18,8 +18,8 @@ type RingQueueInterface interface {
 }
 
 type RingDequeInterface interface {
-	// 移除队首元素
-	LPop() interface{}
+	// 移除队尾元素
+	Pop() interface{}
 	// 从队首添加元素
 	LInsert(x interface{}) interface{}
 	RingQueueInterface
