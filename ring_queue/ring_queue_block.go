@@ -44,6 +44,19 @@ func (q *RingQueueBlock) Tail() interface{} {
 	return q.nums[pos]
 }
 
+func (q *RingQueueBlock) LInsert(x interface{}) bool {
+	if q.IsFull() {
+		return false
+	}
+	if q.front == 0 {
+		q.front = q.length - 1
+	} else {
+		q.front -= 1
+	}
+	q.nums[q.front] = x
+	return true
+}
+
 func (q *RingQueueBlock) Insert(x interface{}) bool {
 	if q.IsFull() {
 		return false
@@ -52,6 +65,18 @@ func (q *RingQueueBlock) Insert(x interface{}) bool {
 	q.rear++ // q.rear = (q.rear + 1) % q.length // rear指针后移一位
 	if q.rear == q.length {
 		q.rear = 0
+	}
+	return true
+}
+
+func (q *RingQueueBlock) Pop() bool {
+	if q.Empty() {
+		return false
+	}
+	if q.rear == 0 {
+		q.rear = q.length - 1
+	} else {
+		q.rear -= 1
 	}
 	return true
 }

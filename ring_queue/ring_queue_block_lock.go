@@ -52,6 +52,25 @@ func (q *RingQueueBlockRWLock) Insert(x interface{}) bool {
 	return q.RingQueueBlock.Insert(x)
 }
 
+func (q *RingQueueBlockRWLock) LInsert(x interface{}) bool {
+	if q.IsFull() {
+		return false
+	}
+
+	q.rw.Lock()
+	defer q.rw.Unlock()
+	return q.RingQueueBlock.LInsert(x)
+}
+
+func (q *RingQueueBlockRWLock) Pop() bool {
+	if q.Empty() {
+		return false
+	}
+	q.rw.Lock()
+	defer q.rw.Unlock()
+	return q.RingQueueBlock.Pop()
+}
+
 func (q *RingQueueBlockRWLock) LPop() bool {
 	if q.Empty() {
 		return false
