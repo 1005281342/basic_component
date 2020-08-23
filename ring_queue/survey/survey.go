@@ -1,14 +1,61 @@
 package main
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/1005281342/basic_component/ring_queue"
 	"github.com/1005281342/test_tools/survey"
 )
 
 func main() {
-	case2()
+	case4()
 }
 
+var wg sync.WaitGroup
+
+// 无锁版环形队列对并发的支持
+func case4() {
+	var cnt = 10
+	var rq = ring_queue.NewRingQueueBlock(5 * cnt)
+	for i := 0; i < cnt; i++ {
+		var v = i
+		wg.Add(1)
+		go func() {
+			rq.LInsert(v)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	fmt.Println(rq.Len())
+	for !rq.Empty() {
+		fmt.Println(rq.Head())
+		rq.LPop()
+	}
+}
+
+// 无锁版环形队列 PK 有锁版环形队列
+func case3() {
+	var (
+		start = 1000
+		end   = 20000
+		step  = 1000
+		cnt   = 100
+	)
+	var rq = ring_queue.NewRingQueueBlock(end)
+	survey.RunIterations("ringQueueBlock_Insert", start, end, step,
+		survey.Func2(func(x interface{}) { rq.Insert(x) }, cnt))
+	survey.RunIterations("ringQueueBlock_LPop", start, end, step,
+		survey.Func2(func(x interface{}) { rq.LPop() }, cnt))
+
+	var rqb = ring_queue.NewRingQueueBlockRWLock(end)
+	survey.RunIterations("ringQueueBlockRWLock_Insert", start, end, step,
+		survey.Func2(func(x interface{}) { rqb.Insert(x) }, cnt))
+	survey.RunIterations("ringQueueBlockRWLock_LPop", start, end, step,
+		survey.Func2(func(x interface{}) { rqb.LPop() }, cnt))
+}
+
+// 环形队列 PK 管道Channel
 func case2() {
 	var (
 		start = 100
@@ -35,6 +82,7 @@ func case2() {
 	*/
 }
 
+// 并发写、并发读性能测试
 func case1() {
 
 	var (
