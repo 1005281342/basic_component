@@ -9,25 +9,71 @@ import (
 )
 
 func main() {
-	case4()
+	//case3()
+	//case4()
+	case5()
 }
 
 var wg sync.WaitGroup
 
-// 无锁版环形队列对并发的支持
-func case4() {
-	var cnt = 10
-	var rq = ring_queue.NewRingQueueBlock(5 * cnt)
-	for i := 0; i < cnt; i++ {
+// 有锁版环形队列对并发的支持
+func case5() {
+	var cnt = 1000
+	var rq = ring_queue.NewRingQueueBlockRWLock(5 * cnt)
+	for i := 0; i < cnt*4; i++ {
 		var v = i
 		wg.Add(1)
-		go func() {
-			rq.LInsert(v)
-			wg.Done()
-		}()
+		if i%4 == 0 {
+			go func() {
+				rq.LPop()
+				wg.Done()
+			}()
+		} else if i%4 == 1 {
+			go func() {
+				rq.Head()
+				wg.Done()
+			}()
+		} else {
+			go func() {
+				rq.LInsert(v)
+				wg.Done()
+			}()
+		}
 	}
 	wg.Wait()
-	fmt.Println(rq.Len())
+	fmt.Println(rq.Len()) // 1002
+	for !rq.Empty() {
+		fmt.Println(rq.Head())
+		rq.LPop()
+	}
+}
+
+// 无锁版环形队列对并发的支持
+func case4() {
+	var cnt = 1000
+	var rq = ring_queue.NewRingQueueBlock(5 * cnt)
+	for i := 0; i < cnt*4; i++ {
+		var v = i
+		wg.Add(1)
+		if i%4 == 0 {
+			go func() {
+				rq.LPop()
+				wg.Done()
+			}()
+		} else if i%4 == 1 {
+			go func() {
+				rq.Head()
+				wg.Done()
+			}()
+		} else {
+			go func() {
+				rq.LInsert(v)
+				wg.Done()
+			}()
+		}
+	}
+	wg.Wait()
+	fmt.Println(rq.Len()) // 960
 	for !rq.Empty() {
 		fmt.Println(rq.Head())
 		rq.LPop()
