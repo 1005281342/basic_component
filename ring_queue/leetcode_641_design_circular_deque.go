@@ -1,12 +1,12 @@
 package ring_queue
 
 type MyCircularDeque struct {
-	dq *RingQueueBlock
+	dq *RingQueue
 }
 
 ///** Initialize your data structure here. Set the size of the deque to be k. */
 //func Constructor(k int) MyCircularDeque {
-//	return MyCircularDeque{dq: NewRingQueueBlock(k)}
+//	return MyCircularDeque{dq: NewRingQueue(k)}
 //}
 
 /** Adds an item at the front of Deque. Return true if the operation is successful. */

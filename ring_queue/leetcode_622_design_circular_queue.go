@@ -1,12 +1,12 @@
 package ring_queue
 
 type MyCircularQueue struct {
-	rq *RingQueueBlock
+	rq *RingQueue
 }
 
 /** Initialize your data structure here. Set the size of the queue to be k. */
 //func Constructor(k int) MyCircularQueue {
-//	return MyCircularQueue{rq: NewRingQueueBlock(k)}
+//	return MyCircularQueue{rq: NewRingQueue(k)}
 //}
 
 /** Insert an element into the circular queue. Return true if the operation is successful. */
