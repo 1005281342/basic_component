@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestRingQueueBlock_Len(t *testing.T) {
-	var r = NewRingQueueBlock(10)
+func TestRingQueue_Len(t *testing.T) {
+	var r = NewRingQueue(10)
 	r.Insert(123)
 	r.Insert(123)
 	r.Insert(123)

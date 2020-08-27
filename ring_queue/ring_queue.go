@@ -1,29 +1,29 @@
 package ring_queue
 
-type RingQueueBlock struct {
+type RingQueue struct {
 	front  int           // 指向队列头部第1个有效数据的位置
 	rear   int           // 指向队列尾部（即最后1个有效数据）的下一个位置，即下一个从队尾入队元素的位置
 	length int           // 队列长度，非容量，slice动态库容
 	nums   []interface{} // 队列元素
 }
 
-// NewRingQueueBlock Initialize the structure. Set the size of the queue to be k.
-func NewRingQueueBlock(k int) *RingQueueBlock {
+// NewRingQueue Initialize the structure. Set the size of the queue to be k.
+func NewRingQueue(k int) *RingQueue {
 	var length = k + 1
-	return &RingQueueBlock{
+	return &RingQueue{
 		length: length,
 		nums:   make([]interface{}, length),
 	}
 }
 
-func (q *RingQueueBlock) Len() int {
+func (q *RingQueue) Len() int {
 	if q.front > q.rear {
 		return q.rear - q.front + q.length
 	}
 	return q.rear - q.front
 }
 
-func (q *RingQueueBlock) Head() interface{} {
+func (q *RingQueue) Head() interface{} {
 	if q.Empty() {
 		return nil
 	}
@@ -31,7 +31,7 @@ func (q *RingQueueBlock) Head() interface{} {
 	return q.nums[q.front]
 }
 
-func (q *RingQueueBlock) Tail() interface{} {
+func (q *RingQueue) Tail() interface{} {
 	if q.Empty() {
 		return nil
 	}
@@ -44,7 +44,7 @@ func (q *RingQueueBlock) Tail() interface{} {
 	return q.nums[pos]
 }
 
-func (q *RingQueueBlock) LInsert(x interface{}) bool {
+func (q *RingQueue) LInsert(x interface{}) bool {
 	if q.IsFull() {
 		return false
 	}
@@ -57,7 +57,7 @@ func (q *RingQueueBlock) LInsert(x interface{}) bool {
 	return true
 }
 
-func (q *RingQueueBlock) Insert(x interface{}) bool {
+func (q *RingQueue) Insert(x interface{}) bool {
 	if q.IsFull() {
 		return false
 	}
@@ -69,7 +69,7 @@ func (q *RingQueueBlock) Insert(x interface{}) bool {
 	return true
 }
 
-func (q *RingQueueBlock) Pop() bool {
+func (q *RingQueue) Pop() bool {
 	if q.Empty() {
 		return false
 	}
@@ -81,7 +81,7 @@ func (q *RingQueueBlock) Pop() bool {
 	return true
 }
 
-func (q *RingQueueBlock) LPop() bool {
+func (q *RingQueue) LPop() bool {
 	if q.Empty() {
 		return false
 	}
@@ -95,11 +95,11 @@ func (q *RingQueueBlock) LPop() bool {
 }
 
 // IsEmpty check the queue is empty.
-func (q *RingQueueBlock) Empty() bool {
+func (q *RingQueue) Empty() bool {
 	return q.front == q.rear
 }
 
 // IsFull check the queue is full.
-func (q *RingQueueBlock) IsFull() bool {
+func (q *RingQueue) IsFull() bool {
 	return (q.rear+1)%q.length == q.front
 }
