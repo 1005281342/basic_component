@@ -27,4 +27,15 @@ func TestRingQueue_Len(t *testing.T) {
 	fmt.Println(r.Head(), r.Tail()) // 8
 
 	t.Logf("elem count: %d", r.Len()) // ok 8
+
+	for !r.Empty() {
+		r.Pop()
+	}
+
+	for i := 0; i < 10; i++ {
+		if !r.Insert(i) {
+			t.Errorf("insert failed: %d", i)
+		}
+	}
+	t.Logf("len: %d", r.Len())
 }
