@@ -21,7 +21,7 @@ func NewLRUCache(size int) (*LRUCache, error) {
 	return &LRUCache{lru: lru}, nil
 }
 
-func NewLRUCacheWithEvict(size int, callback EvictCallback) (*LRUCache, error) {
+func NewLRUCacheWithCallBack(size int, callback EvictCallback) (*LRUCache, error) {
 	var (
 		lru *lru
 		err error
@@ -145,7 +145,7 @@ func (c *lru) removeElement(e *list.Element) {
 	kv := e.Value.(*entry)
 	delete(c.items, kv.key)
 	if c.onEvict != nil {
-		c.onEvict(kv.key, kv.value)
+		go c.onEvict(kv.key, kv.value)
 	}
 }
 
