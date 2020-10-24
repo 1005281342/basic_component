@@ -1,6 +1,9 @@
 package cache
 
-import "time"
+import (
+	"github.com/panjf2000/ants/v2"
+	"time"
+)
 
 type BaseOp interface {
 	Put(interface{}, interface{}) bool   // 添加元素到缓存中，若存在则更新元素值 返回True
@@ -29,4 +32,5 @@ type Opt struct {
 	Interval          time.Duration // 回收间隔，限制最小为10s
 	Size              int           // 缓存容量
 	AntsPoolSize      int           // 协程池容量
+	AntsOptionList    []ants.Option // 可选操作扩展列表
 }

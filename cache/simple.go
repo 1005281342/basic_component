@@ -11,8 +11,8 @@ type SimpleCache struct {
 	lock sync.RWMutex
 }
 
-func NewSimpleCache(opt Opt) *SimpleCache {
-	return &SimpleCache{simple: newSimple(opt.Callback, opt.DefaultExpiration, opt.Interval)}
+func NewSimpleCache(opt *Opt) *SimpleCache {
+	return &SimpleCache{simple: newSimple(opt)}
 }
 
 func (sc *SimpleCache) Put(key interface{}, value interface{}) bool {
@@ -58,15 +58,15 @@ type simple struct {
 	*expire               // 过期属性
 }
 
-func newSimple(callback EvictCallback, defaultExpiration time.Duration, interval time.Duration) *simple {
+func newSimple(opt *Opt) *simple {
 	var s = &simple{
 		items:   make(map[interface{}]*item),
-		onEvict: callback,
-		expire:  newExpire(defaultExpiration, interval),
+		onEvict: opt.Callback,
+		expire:  newExpire(opt),
 	}
 
-	if defaultExpiration <= DefaultExpirationThreshold {
-		defaultExpiration = NoExpiration
+	if opt.DefaultExpiration <= DefaultExpirationThreshold {
+		opt.DefaultExpiration = NoExpiration
 	}
 
 	if s.interval > 0 {

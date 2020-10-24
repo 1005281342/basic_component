@@ -16,7 +16,7 @@ func main() {
 }
 
 func case2() {
-	var ca = cache.NewSimpleCache(cache.Opt{Callback: nil, DefaultExpiration: time.Second})
+	var ca = cache.NewSimpleCache(&cache.Opt{Callback: nil, DefaultExpiration: time.Second})
 	ca.PutWithExpire(5, struct{}{}, 100*time.Millisecond)
 	ca.PutWithExpire(6, struct{}{}, 100*time.Millisecond)
 	ca.PutWithExpire(7, struct{}{}, 1000*time.Millisecond)
@@ -35,7 +35,7 @@ func case2() {
 
 func case1() {
 	var size = 1024 * 32
-	var ca = cache.NewSimpleCache(cache.Opt{})
+	var ca = cache.NewSimpleCache(&cache.Opt{})
 
 	var ch = make(chan struct{}, 1000)
 	for i := 0; i < size*2+100; i++ {

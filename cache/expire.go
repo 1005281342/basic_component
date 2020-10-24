@@ -29,14 +29,15 @@ func (e *expire) absoluteTime(d time.Duration) int64 {
 }
 
 // defaultExpiration 默认过期时间，interval看门狗回收间隔
-func newExpire(defaultExpiration time.Duration, interval time.Duration) *expire {
+func newExpire(opt *Opt) *expire {
 	// 回收间隔不规范
-	if interval <= 0 {
+	if opt.Interval <= 0 {
 		// 参考redis设置定期回收间隔为10s
-		interval = time.Second * 10
+		opt.Interval = time.Second * 10
 	}
 	return &expire{
-		defaultExpiration: defaultExpiration,
-		watchdog:          watchdog{stop: make(chan struct{}), interval: interval},
+		defaultExpiration: opt.DefaultExpiration,
+		watchdog:          watchdog{stop: make(chan struct{}), interval: opt.Interval},
+		goroutinePool:     newGoroutinePool(opt.Size, opt.AntsOptionList...),
 	}
 }
