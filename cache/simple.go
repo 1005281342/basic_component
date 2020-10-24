@@ -178,11 +178,9 @@ func (s *simple) Clear() {
 func (s *simple) DeleteExpired() {
 	var now = time.Now().UnixNano() // 减少系统调用
 	for k, v := range s.items {
-		if !(v.expiration > 0 && now > v.expiration) {
-			continue
+		if v.expiration > 0 && now > v.expiration {
+			s.remove(k, v)
 		}
-		// 惰性回收
-		s.remove(k, v)
 	}
 }
 
