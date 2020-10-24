@@ -64,12 +64,7 @@ func newSimple(opt *Opt) *simple {
 		onEvict: opt.Callback,
 		expire:  newExpire(opt),
 	}
-
-	if opt.DefaultExpiration <= DefaultExpirationThreshold {
-		opt.DefaultExpiration = NoExpiration
-	}
-
-	if s.interval > 0 {
+	if s.expire.interval > 0 {
 		go s.expire.run(s)
 		runtime.SetFinalizer(s.expire, stopWatchdog)
 	}

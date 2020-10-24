@@ -10,7 +10,7 @@ var wg sync.WaitGroup
 
 func main() {
 	var size = 1024 * 32
-	var lfu = cache.NewLFUCache(size)
+	var lfu = cache.NewLFUCache(&cache.Opt{Capacity: size})
 
 	var ch = make(chan struct{}, 1000)
 	for i := 0; i < size*2+100; i++ {

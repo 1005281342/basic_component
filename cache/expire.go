@@ -35,6 +35,9 @@ func newExpire(opt *Opt) *expire {
 		// 参考redis设置定期回收间隔为10s
 		opt.Interval = time.Second * 10
 	}
+	if opt.DefaultExpiration <= DefaultExpirationThreshold {
+		opt.DefaultExpiration = NoExpiration
+	}
 	return &expire{
 		defaultExpiration: opt.DefaultExpiration,
 		watchdog:          watchdog{stop: make(chan struct{}), interval: opt.Interval},

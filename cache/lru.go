@@ -2,6 +2,7 @@ package cache
 
 import (
 	"container/list"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -76,6 +77,10 @@ func newLRU(opt *Opt) (*lru, error) {
 		items:     make(map[interface{}]*list.Element),
 		onEvict:   opt.Callback,
 		expire:    newExpire(opt),
+	}
+	if c.expire.interval > 0 {
+		go c.expire.run(c)
+		runtime.SetFinalizer(c.expire, stopWatchdog)
 	}
 	return c, nil
 }
@@ -176,8 +181,10 @@ func (c *lru) Remove(key interface{}) bool {
 		ok   bool
 	)
 	if node, ok = c.items[key]; ok {
+
+		var expired = node.Value.(*entry).Expired()
 		c.removeElement(node)
-		return true
+		return !expired
 	}
 	return false
 }
