@@ -38,6 +38,6 @@ func newExpire(opt *Opt) *expire {
 	return &expire{
 		defaultExpiration: opt.DefaultExpiration,
 		watchdog:          watchdog{stop: make(chan struct{}), interval: opt.Interval},
-		goroutinePool:     newGoroutinePool(opt.Size, opt.AntsOptionList...),
+		goroutinePool:     newGoroutinePool(opt.AntsPoolCapacity, opt.AntsOptionList...),
 	}
 }

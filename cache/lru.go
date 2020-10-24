@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"sync"
+	"time"
 )
 
 type LRUCache struct {
@@ -10,23 +11,12 @@ type LRUCache struct {
 	lock sync.RWMutex
 }
 
-func NewLRUCache(size int) (*LRUCache, error) {
+func NewLRUCache(opt *Opt) (*LRUCache, error) {
 	var (
 		lru *lru
 		err error
 	)
-	if lru, err = newLRU(size, nil); err != nil {
-		return nil, err
-	}
-	return &LRUCache{lru: lru}, nil
-}
-
-func NewLRUCacheWithCallBack(size int, callback EvictCallback) (*LRUCache, error) {
-	var (
-		lru *lru
-		err error
-	)
-	if lru, err = newLRU(size, callback); err != nil {
+	if lru, err = newLRU(opt); err != nil {
 		return nil, err
 	}
 	return &LRUCache{lru: lru}, nil
@@ -63,26 +53,29 @@ func (lc *LRUCache) Clear() {
 }
 
 type lru struct {
-	size      int                           // 容量
+	capacity  int                           // 缓存容量
+	size      int                           // 使用节点
 	evictList *list.List                    // 淘汰链表，需要进行淘汰时，淘汰链表尾部元素
 	items     map[interface{}]*list.Element // 绑定元素key和链表节点
 	onEvict   EvictCallback                 // 淘汰元素时执行的回调
+	*expire                                 // 过期属性
 }
 
 type entry struct {
-	key   interface{}
-	value interface{}
+	key interface{}
+	*item
 }
 
-func newLRU(size int, onEvict EvictCallback) (*lru, error) {
-	if size <= 0 {
+func newLRU(opt *Opt) (*lru, error) {
+	if opt.Capacity <= 0 {
 		return nil, ErrSize
 	}
 	c := &lru{
-		size:      size,
+		capacity:  opt.Capacity,
 		evictList: list.New(),
 		items:     make(map[interface{}]*list.Element),
-		onEvict:   onEvict,
+		onEvict:   opt.Callback,
+		expire:    newExpire(opt),
 	}
 	return c, nil
 }
@@ -93,18 +86,30 @@ func (c *lru) Get(key interface{}) (interface{}, bool) {
 		node *list.Element
 		ok   bool
 	)
-	if node, ok = c.items[key]; ok {
-		c.evictList.MoveToFront(node)
-		if node.Value.(*entry) == nil {
-			return nil, false
-		}
-		return node.Value.(*entry).value, true
+	if node, ok = c.items[key]; !ok {
+		return nil, false
 	}
-	return nil, false
+
+	var et = node.Value.(*entry)
+	if et == nil {
+		return nil, false
+	}
+
+	if et.Expired() {
+		c.removeElement(node)
+		return nil, false
+	}
+
+	c.evictList.MoveToFront(node)
+	return et.item.value, true
 }
 
 // Put 如果元素存在则更新, 不存在则添加；return 是否淘汰元素
 func (c *lru) Put(key, value interface{}) bool {
+	return c.PutWithExpire(key, value, NoExpiration)
+}
+
+func (c *lru) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Duration) bool {
 
 	var (
 		node *list.Element
@@ -113,22 +118,34 @@ func (c *lru) Put(key, value interface{}) bool {
 	// 如果元素存在则更新
 	if node, ok = c.items[key]; ok {
 		c.evictList.MoveToFront(node)
-		node.Value.(*entry).value = value
+		node.Value.(*entry).item.value = value
+		node.Value.(*entry).item.expiration = c.absoluteTime(lifeSpan)
 		return false
 	}
 
 	// 不存在则新增
 	// 将元素值插入到链表头
-	node = c.evictList.PushFront(&entry{key, value})
+	node = c.evictList.PushFront(&entry{key, &item{value: value, expiration: c.absoluteTime(lifeSpan)}})
 	// 绑定元素
 	c.items[key] = node
+	c.size++
 
 	// 检查容量
-	var evict = c.evictList.Len() > c.size
+	var evict = c.evictList.Len() > c.capacity
 	if evict {
 		c.removeOldest()
 	}
 	return evict
+}
+
+func (c *lru) DeleteExpired() {
+	var now = time.Now().UnixNano() // 减少系统调用
+	for node := c.evictList.Front(); node != nil; node = node.Next() {
+		var it = node.Value.(*entry).item
+		if it.expiration > 0 && now > it.expiration {
+			c.removeElement(node)
+		}
+	}
 }
 
 // 从LRU中移除最后一个节点
@@ -144,8 +161,11 @@ func (c *lru) removeElement(e *list.Element) {
 	c.evictList.Remove(e)
 	kv := e.Value.(*entry)
 	delete(c.items, kv.key)
+	c.size--
 	if c.onEvict != nil {
-		go c.onEvict(kv.key, kv.value)
+		_ = c.goroutinePool.Submit(func() {
+			c.onEvict(kv.key, kv.value)
+		})
 	}
 }
 
@@ -170,6 +190,7 @@ func (c *lru) Clear() {
 		delete(c.items, k)
 	}
 	c.evictList.Init()
+	c.size = 0
 }
 
 func (c *lru) Len() int {
