@@ -2,7 +2,9 @@ package cache
 
 import (
 	"container/list"
+	"runtime"
 	"sync"
+	"time"
 )
 
 type LFUCache struct {
@@ -10,11 +12,8 @@ type LFUCache struct {
 	lock sync.RWMutex
 }
 
-func NewLFUCache(size int) *LFUCache {
-	return &LFUCache{lfu: newLFU(size, nil)}
-}
-func NewLFUCacheWithCallBack(size int, callback EvictCallback) *LFUCache {
-	return &LFUCache{lfu: newLFU(size, callback)}
+func NewLFUCache(opt *Opt) *LFUCache {
+	return &LFUCache{lfu: newLFU(opt)}
 }
 
 func (lc *LFUCache) Get(key interface{}) (interface{}, bool) {
@@ -60,18 +59,46 @@ type lfu struct {
 	min int
 	// 淘汰元素时执行的回调
 	onEvict EvictCallback
+	// 过期属性
+	*expire
 }
 
-func newLFU(size int, callback EvictCallback) *lfu {
-	return &lfu{size: size, onEvict: callback}
+func newLFU(opt *Opt) *lfu {
+	var c = &lfu{
+		capacity: opt.Capacity,
+		onEvict:  opt.Callback,
+		expire:   newExpire(opt),
+	}
+	if c.expire.interval > 0 {
+		go c.expire.run(c)
+		runtime.SetFinalizer(c.expire, stopWatchdog)
+	}
+	return c
 }
 
 func (c *lfu) Get(key interface{}) (interface{}, bool) {
-	if node, ok := c.cache[key]; ok {
-		c.freqInc(node)
-		return node.Value.(*list.Element).Value, true
+	var (
+		node *list.Element
+		ok   bool
+	)
+	if node, ok = c.cache[key]; !ok {
+		return nil, false
 	}
-	return nil, false
+
+	var et = node.Value.(*entryWithFreq)
+	var value = et.item.value
+	if et.Expired() {
+		// 惰性回收
+		// 1. 查询所在频次链表
+		// 2. 从Cache中移除
+		// 3. 从最小频次链表移除
+		// 4. 执行回调
+		c.remove(key, value, c.freqMap[et.freq], node)
+		return nil, false
+	}
+
+	c.freqInc(node)
+	return value, true
 }
 
 func (c *lfu) freqInc(node *list.Element) {
@@ -107,12 +134,17 @@ func (c *lfu) freqInc(node *list.Element) {
 }
 
 func (c *lfu) Put(key interface{}, value interface{}) bool {
+	return c.PutWithExpire(key, value, NoExpiration)
+}
+
+func (c *lfu) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Duration) bool {
 	if c.capacity == 0 {
 		return false
 	}
 	// 对象已存在缓存则进行更新
 	if node, ok := c.cache[key]; ok {
-		node.Value.(*entryWithFreq).value = value
+		node.Value.(*entryWithFreq).item.value = value
+		node.Value.(*entryWithFreq).item.expiration = c.absoluteTime(lifeSpan)
 		node.Value.(*entryWithFreq).freq++
 		return false
 	}
@@ -128,10 +160,39 @@ func (c *lfu) Put(key interface{}, value interface{}) bool {
 		oneFreqList = list.New()
 		c.freqMap[1] = oneFreqList
 	}
-	c.cache[key] = oneFreqList.PushFront(newEntryWithFreq(key, value))
+	c.cache[key] = oneFreqList.PushFront(c.newEntryWithFreq(key, value, lifeSpan))
 	c.size++
 	c.min = 1
 	return evict
+}
+
+func (c *lfu) DeleteExpired() {
+	var now = time.Now().UnixNano() // 减少系统调用
+	for key, node := range c.cache {
+		var et = node.Value.(*entryWithFreq)
+		// 未过期
+		if et.expiration <= 0 || now < et.expiration {
+			continue
+		}
+
+		var val = et.item.value
+		var nodeList = c.freqMap[et.freq]
+		c.remove(key, val, nodeList, node)
+	}
+}
+
+func (c *lfu) remove(key, value interface{}, nodeList *list.List, node *list.Element) {
+	// 移除节点
+	nodeList.Remove(node)
+	// 2. 从Cache中移除
+	delete(c.cache, key)
+	c.size--
+	// 3. 执行回调
+	if c.onEvict != nil {
+		_ = c.goroutinePool.Submit(func() {
+			c.onEvict(key, value)
+		})
+	}
 }
 
 func (c *lfu) evictNode() bool {
@@ -141,7 +202,6 @@ func (c *lfu) evictNode() bool {
 
 	var minFreqList *list.List
 
-	//fmt.Printf("c.size == c.capacity, c.min %d \n", c.min)
 	var (
 		v  interface{}
 		ok bool
@@ -150,28 +210,10 @@ func (c *lfu) evictNode() bool {
 		return false
 	}
 
-	// DEBUG
-	//c.freqMap.Range(func(k, v interface{}) bool {
-	//	fmt.Printf("iterate: %d : %#+v \n",
-	//		k.(uint32),
-	//		v.(*lfuNodeList).tail.prev.key)
-	//	return true
-	//})
-
 	minFreqList = v.(*list.List)
-	//fmt.Printf("key %#+v \n", minFreqList.tail.prev.key)
-	// 从缓存中移除最小频次链表中的最后一个节点对象
-	//c.cache.Delete(minFreqList.tail.prev.key)
+	// 从最小频次链表中获取最后一个节点对象
 	var elem = minFreqList.Back().Value.(*entryWithFreq)
-	if c.onEvict != nil {
-		go c.onEvict(elem.key, elem.value)
-	}
-	delete(c.cache, elem.key)
-	// 从最小频次链表中移除最后一个节点
-	//minFreqList.removeNode(minFreqList.tail.prev)
-	minFreqList.Remove(minFreqList.Back())
-	c.size--
-	//c.sizeDec()
+	c.remove(elem.key, elem.item.value, minFreqList, minFreqList.Back())
 	return true
 }
 
@@ -195,9 +237,12 @@ func (c *lfu) Remove(key interface{}) bool {
 	if nodeList, ok = c.freqMap[freq]; !ok {
 		return false
 	}
-	nodeList.Remove(node)
-	c.size--
-	return true
+
+	var et = node.Value.(*entryWithFreq)
+	var expired = et.item.Expired()
+
+	c.remove(key, et.item.value, nodeList, node)
+	return !expired
 }
 
 type entryWithFreq struct {
@@ -226,6 +271,6 @@ func (c *lfu) Len() int {
 	return c.size
 }
 
-func newEntryWithFreq(key, value interface{}) *entryWithFreq {
-	return &entryWithFreq{&entry{key: key, value: value}, 1}
+func (c *lfu) newEntryWithFreq(key, value interface{}, lifeSpan time.Duration) *entryWithFreq {
+	return &entryWithFreq{&entry{key: key, item: &item{value: value, expiration: c.absoluteTime(lifeSpan)}}, 1}
 }
