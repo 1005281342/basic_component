@@ -35,6 +35,12 @@ func (lc *LRUCache) Put(key, value interface{}) bool {
 	return lc.lru.Put(key, value)
 }
 
+func (lc *LRUCache) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Duration) bool {
+	lc.lock.Lock()
+	defer lc.lock.Unlock()
+	return lc.lru.PutWithExpire(key, value, lifeSpan)
+}
+
 func (lc *LRUCache) Remove(key interface{}) bool {
 	lc.lock.Lock()
 	defer lc.lock.Unlock()
@@ -65,6 +71,11 @@ type lru struct {
 type entry struct {
 	key interface{}
 	item
+}
+
+func (e *entry) Reset() {
+	e.item.Reset()
+	e.key = nil
 }
 
 func newLRU(opt *Opt) (*lru, error) {
@@ -130,7 +141,12 @@ func (c *lru) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Du
 
 	// 不存在则新增
 	// 将元素值插入到链表头
-	node = c.evictList.PushFront(&entry{key, item{value: value, expiration: c.absoluteTime(lifeSpan)}})
+	var et = entryPool.Get().(*entry)
+	et.Reset()
+	et.key = key
+	et.item.value = value
+	et.item.expiration = c.absoluteTime(lifeSpan)
+	node = c.evictList.PushFront(et)
 	// 绑定元素
 	c.items[key] = node
 	c.size++
@@ -169,9 +185,10 @@ func (c *lru) removeElement(e *list.Element) {
 	c.size--
 	if c.onEvict != nil {
 		_ = c.goroutinePool.Submit(func() {
-			c.onEvict(kv.key, kv.value)
+			c.onEvict(kv.key, kv.item.value)
 		})
 	}
+	entryPool.Put(kv)
 }
 
 // 从LRU中移除节点；通过key
