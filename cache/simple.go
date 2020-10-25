@@ -95,10 +95,13 @@ func (s *simple) PutWithExpire(k interface{}, v interface{}, lifeSpan time.Durat
 	}
 
 	// 不存在，新增
-	s.items[k] = &item{
-		value:      v,
-		expiration: s.absoluteTime(lifeSpan),
-	}
+	it = itemPool.Get().(*item)
+	// 清空
+	it.Reset()
+	// 赋值
+	it.value = v
+	it.expiration = s.absoluteTime(lifeSpan)
+	s.items[k] = it
 	s.size++
 	return true
 }
@@ -156,6 +159,7 @@ func (s *simple) remove(key interface{}, it *item) {
 	_ = s.goroutinePool.Submit(func() {
 		callEvict(s.onEvict, key, val)
 	})
+	itemPool.Put(it)
 }
 
 func (s *simple) Len() int {
@@ -182,6 +186,11 @@ func (s *simple) DeleteExpired() {
 type item struct {
 	value      interface{} // 元素值
 	expiration int64       // 绝对过期时间
+}
+
+func (i *item) Reset() {
+	i.value = nil
+	i.expiration = 0
 }
 
 // Expired 是否过期
