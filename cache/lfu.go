@@ -248,7 +248,7 @@ func (c *lfu) Remove(key interface{}) bool {
 }
 
 type entryWithFreq struct {
-	*entry
+	entry
 	freq int
 }
 
@@ -275,5 +275,5 @@ func (c *lfu) Len() int {
 }
 
 func (c *lfu) newEntryWithFreq(key, value interface{}, lifeSpan time.Duration) *entryWithFreq {
-	return &entryWithFreq{&entry{key: key, item: &item{value: value, expiration: c.absoluteTime(lifeSpan)}}, 1}
+	return &entryWithFreq{entry{key: key, item: item{value: value, expiration: c.absoluteTime(lifeSpan)}}, 1}
 }

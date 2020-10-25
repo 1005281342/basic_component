@@ -64,7 +64,7 @@ type lru struct {
 
 type entry struct {
 	key interface{}
-	*item
+	item
 }
 
 func newLRU(opt *Opt) (*lru, error) {
@@ -130,7 +130,7 @@ func (c *lru) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Du
 
 	// 不存在则新增
 	// 将元素值插入到链表头
-	node = c.evictList.PushFront(&entry{key, &item{value: value, expiration: c.absoluteTime(lifeSpan)}})
+	node = c.evictList.PushFront(&entry{key, item{value: value, expiration: c.absoluteTime(lifeSpan)}})
 	// 绑定元素
 	c.items[key] = node
 	c.size++
