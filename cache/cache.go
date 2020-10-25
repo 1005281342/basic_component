@@ -1,9 +1,35 @@
 package cache
 
 import (
+	"fmt"
 	"github.com/panjf2000/ants/v2"
 	"time"
 )
+
+type cacheType int
+
+const (
+	Simple cacheType = iota
+	LRU
+	LFU
+	LRUk
+	LRU2q
+	LRUmq
+	ARC
+)
+
+func NewCache(ct cacheType, opt *Opt) (ExpireCache, error) {
+	switch ct {
+	case Simple:
+		return NewSimpleCache(opt), nil
+	case LRU:
+		return NewLRUCache(opt)
+	case LFU:
+		return NewLFUCache(opt), nil
+	default:
+		return nil, fmt.Errorf("not supported")
+	}
+}
 
 type BaseOp interface {
 	Put(interface{}, interface{}) bool   // 添加元素到缓存中，若存在则更新元素值 返回True
