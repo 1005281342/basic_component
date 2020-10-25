@@ -139,6 +139,10 @@ func (c *lru) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Du
 		return false
 	}
 
+	return c.put(key, value, lifeSpan)
+}
+
+func (c *lru) put(key, value interface{}, lifeSpan time.Duration) bool {
 	// 不存在则新增
 	// 将元素值插入到链表头
 	var et = entryPool.Get().(*entry)
@@ -146,7 +150,7 @@ func (c *lru) PutWithExpire(key interface{}, value interface{}, lifeSpan time.Du
 	et.key = key
 	et.item.value = value
 	et.item.expiration = c.absoluteTime(lifeSpan)
-	node = c.evictList.PushFront(et)
+	var node = c.evictList.PushFront(et)
 	// 绑定元素
 	c.items[key] = node
 	c.size++

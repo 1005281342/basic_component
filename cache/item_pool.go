@@ -20,4 +20,10 @@ var (
 			return new(entryWithFreq)
 		},
 	}
+
+	entryWithHistoryPool = sync.Pool{
+		New: func() interface{} {
+			return new(entryWithHistory)
+		},
+	}
 )

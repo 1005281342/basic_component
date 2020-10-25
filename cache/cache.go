@@ -26,21 +26,28 @@ func NewCache(ct cacheType, opt *Opt) (ExpireCache, error) {
 		return NewLRUCache(opt)
 	case LFU:
 		return NewLFUCache(opt), nil
+	case LRUk:
+		return NewLRUkCache(opt)
 	default:
 		return nil, fmt.Errorf("not supported")
 	}
 }
 
 type BaseOp interface {
-	Put(interface{}, interface{}) bool   // 添加元素到缓存中，若存在则更新元素值 返回True
-	Get(interface{}) (interface{}, bool) // 从缓存中获取元素，若存在则返回True
-	Remove(interface{}) bool             // 从缓存中移除对象，若存在则返回True
+	// 添加元素到缓存中，若存在则更新元素值 返回True
+	Put(interface{}, interface{}) bool
+	// 从缓存中获取元素，若存在则返回True
+	Get(interface{}) (interface{}, bool)
+	// 从缓存中移除对象，若存在则返回True
+	Remove(interface{}) bool
 }
 
 type Cache interface {
 	BaseOp
-	Len() int // 当前缓存中元素个数
-	Clear()   // 清空当前缓存
+	// 当前缓存中元素个数
+	Len() int
+	// 清空当前缓存
+	Clear()
 }
 
 type ExpireCache interface {
@@ -59,4 +66,5 @@ type Opt struct {
 	Capacity          int           // 缓存容量
 	AntsPoolCapacity  int           // 协程池容量
 	AntsOptionList    []ants.Option // 可选操作扩展列表
+	LruK              int           // LRU-K的频次k
 }
