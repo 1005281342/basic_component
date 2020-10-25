@@ -68,6 +68,8 @@ func newLFU(opt *Opt) *lfu {
 		capacity: opt.Capacity,
 		onEvict:  opt.Callback,
 		expire:   newExpire(opt),
+		cache:    make(map[interface{}]*list.Element),
+		freqMap:  make(map[int]*list.List),
 	}
 	if c.expire.interval > 0 {
 		go c.expire.run(c)
@@ -267,6 +269,7 @@ func (c *lfu) Clear() {
 	c.min = 0
 }
 
+// 过期了但是未被回收也会统计在内
 func (c *lfu) Len() int {
 	return c.size
 }
