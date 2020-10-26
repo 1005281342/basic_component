@@ -251,6 +251,7 @@ func (c *lfu) Remove(key interface{}) bool {
 	return !expired
 }
 
+// LFU
 type entryWithFreq struct {
 	entry
 	freq int

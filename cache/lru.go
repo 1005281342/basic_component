@@ -120,6 +120,11 @@ func (c *lru) Get(key interface{}) (interface{}, bool) {
 	return et.item.value, true
 }
 
+func (c *lru) exist(key interface{}) bool {
+	var _, ok = c.items[key]
+	return ok
+}
+
 // Put 如果元素存在则更新, 不存在则添加；return 是否淘汰元素
 func (c *lru) Put(key, value interface{}) bool {
 	return c.PutWithExpire(key, value, NoExpiration)
@@ -150,7 +155,11 @@ func (c *lru) put(key, value interface{}, lifeSpan time.Duration) bool {
 	et.key = key
 	et.item.value = value
 	et.item.expiration = c.absoluteTime(lifeSpan)
-	var node = c.evictList.PushFront(et)
+	return c.putItem(key, et)
+}
+
+func (c *lru) putItem(key, it interface{}) bool {
+	var node = c.evictList.PushFront(it)
 	// 绑定元素
 	c.items[key] = node
 	c.size++

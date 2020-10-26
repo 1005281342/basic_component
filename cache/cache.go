@@ -28,6 +28,8 @@ func NewCache(ct cacheType, opt *Opt) (ExpireCache, error) {
 		return NewLFUCache(opt), nil
 	case LRUk:
 		return NewLRUkCache(opt)
+	case LRU2q:
+		return NewLRU2QCache(opt)
 	default:
 		return nil, fmt.Errorf("not supported")
 	}
@@ -60,11 +62,13 @@ type ExpireCache interface {
 }
 
 type Opt struct {
-	Callback          EvictCallback // 淘汰回调
-	DefaultExpiration time.Duration // 默认过期间隔
-	Interval          time.Duration // 回收间隔，限制最小为10s
-	Capacity          int           // 缓存容量
-	AntsPoolCapacity  int           // 协程池容量
-	AntsOptionList    []ants.Option // 可选操作扩展列表
-	LruK              int           // LRU-K的频次k
+	Callback              EvictCallback // 淘汰回调
+	DefaultExpiration     time.Duration // 默认过期间隔
+	Interval              time.Duration // 回收间隔，限制最小为10s
+	Capacity              int           // 缓存容量
+	AntsPoolCapacity      int           // 协程池容量
+	AntsOptionList        []ants.Option // 可选操作扩展列表
+	LruK                  int           // LRU-K/LRU-MQ的频次k
+	LruKMinUpdateInterval time.Duration // LRU-K/LRU-MQ历史访问节点最小更新间隔，超过该间隔将频次置为0
+	LRUMQLevel            int           //	LRUMQLevel
 }
