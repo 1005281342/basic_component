@@ -30,6 +30,8 @@ func NewCache(ct cacheType, opt *Opt) (ExpireCache, error) {
 		return NewLRUkCache(opt)
 	case LRU2q:
 		return NewLRU2QCache(opt)
+	case LRUmq:
+		return NewLRUMQCache(opt)
 	default:
 		return nil, fmt.Errorf("not supported")
 	}

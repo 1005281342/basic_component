@@ -172,6 +172,20 @@ func (c *lru) putItem(key, it interface{}) bool {
 	return evict
 }
 
+func (c *lru) putItem2(key, it interface{}) (interface{}, bool) {
+	var node = c.evictList.PushFront(it)
+	// 绑定元素
+	c.items[key] = node
+	c.size++
+
+	// 检查容量
+	var evict = c.evictList.Len() > c.capacity
+	if evict {
+		return c.removeOldest(), true
+	}
+	return nil, false
+}
+
 func (c *lru) DeleteExpired() {
 	var now = time.Now().UnixNano() // 减少系统调用
 	for node := c.evictList.Front(); node != nil; node = node.Next() {
@@ -183,16 +197,17 @@ func (c *lru) DeleteExpired() {
 }
 
 // 从LRU中移除最后一个节点
-func (c *lru) removeOldest() {
+func (c *lru) removeOldest() interface{} {
 	var node = c.evictList.Back()
 	if node != nil {
-		c.removeElement(node)
+		return c.removeElement(node)
 	}
+	return nil
 }
 
 // 从LRU中移除节点；通过链表节点
-func (c *lru) removeElement(e *list.Element) {
-	c.evictList.Remove(e)
+func (c *lru) removeElement(e *list.Element) interface{} {
+	var elem = c.evictList.Remove(e)
 	kv := e.Value.(*entry)
 	delete(c.items, kv.key)
 	c.size--
@@ -202,6 +217,7 @@ func (c *lru) removeElement(e *list.Element) {
 		})
 	}
 	entryPool.Put(kv)
+	return elem
 }
 
 // 从LRU中移除节点；通过key

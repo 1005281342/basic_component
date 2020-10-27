@@ -26,4 +26,10 @@ var (
 			return new(entryWithHistory)
 		},
 	}
+
+	mqEntryPool = sync.Pool{
+		New: func() interface{} {
+			return new(mqEntry)
+		},
+	}
 )
