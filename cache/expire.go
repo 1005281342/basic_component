@@ -32,8 +32,8 @@ func (e *expire) absoluteTime(d time.Duration) int64 {
 func newExpire(opt *Opt) *expire {
 	// 回收间隔不规范
 	if opt.Interval <= 0 {
-		// 参考redis设置定期回收间隔为10s
-		opt.Interval = time.Second * 10
+		// 定期回收间隔为1s  // redis默认定期回收是1秒10次，也就是说每100ms回收一次
+		opt.Interval = time.Second
 	}
 	if opt.DefaultExpiration <= DefaultExpirationThreshold {
 		opt.DefaultExpiration = NoExpiration
